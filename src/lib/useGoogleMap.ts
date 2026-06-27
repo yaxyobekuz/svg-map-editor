@@ -68,6 +68,9 @@ export function useGoogleMap(
           gestureHandling: 'greedy',
           clickableIcons: false,
           keyboardShortcuts: false,
+          // Allow smooth fractional zoom levels so our wheel handler can do
+          // gentle sub-level steps instead of snapping to whole levels.
+          isFractionalZoomEnabled: true,
         })
         mapRef.current = map
 

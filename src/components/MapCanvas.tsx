@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useGoogleMap } from '../lib/useGoogleMap'
 import { useEditor } from '../store'
+import { GridLayer } from './GridLayer'
 import { SvgOverlay } from './SvgOverlay'
 
 export function MapCanvas() {
@@ -15,8 +16,32 @@ export function MapCanvas() {
   const mapDivRef = useRef<HTMLDivElement>(null)
   const { map, projector, version, status, error } = useGoogleMap(mapDivRef)
   const dropTemplate = useEditor((s) => s.dropTemplate)
+  const gridSize = useEditor((s) => s.gridSize)
 
   const [size, setSize] = useState({ width: 0, height: 0 })
+
+  // A fixed geographic anchor for the grid. Captured once the projector is
+  // ready; the grid's pixel offset is derived from where this anchor currently
+  // projects to, so the grid PANS with the map (lines track the terrain) while
+  // its cell size stays constant on zoom (we take the offset modulo gridSize).
+  const gridAnchorRef = useRef<{ lat: number; lng: number } | null>(null)
+  let gridOffset = { x: 0, y: 0 }
+  if (projector) {
+    // re-read on every map move
+    void version
+    if (!gridAnchorRef.current) {
+      gridAnchorRef.current = projector.toLatLng({ x: 0, y: 0 })
+    }
+    const anchor = gridAnchorRef.current
+    const px = anchor ? projector.toPixel(anchor) : null
+    if (px) {
+      // modulo keeps the pattern stable; ((a % n) + n) % n handles negatives
+      gridOffset = {
+        x: ((px.x % gridSize) + gridSize) % gridSize,
+        y: ((px.y % gridSize) + gridSize) % gridSize,
+      }
+    }
+  }
 
   // Track the container size for the SVG overlay.
   useEffect(() => {
@@ -57,6 +82,9 @@ export function MapCanvas() {
       {/* Google Maps mounts here */}
       <div ref={mapDivRef} className="map-bg" />
 
+      {/* Pixel grid: constant cell size, but offset follows the map's pan */}
+      <GridLayer offsetX={gridOffset.x} offsetY={gridOffset.y} />
+
       {/* SVG editor overlay */}
       <SvgOverlay
         map={map}
@@ -64,6 +92,7 @@ export function MapCanvas() {
         version={version}
         width={size.width}
         height={size.height}
+        gridOffset={gridOffset}
       />
 
       {status === 'no-key' && <NoKeyNotice />}

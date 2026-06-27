@@ -243,6 +243,15 @@
   inset: 0;
 }
 
+/* Screen-fixed pixel grid; sits above the map, below the SVG overlay. */
+.grid-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background-position: 0 0;
+}
+
 .svg-overlay {
   position: absolute;
   top: 0;

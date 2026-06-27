@@ -31,6 +31,8 @@ interface Props {
   version: number
   width: number
   height: number
+  /** Current pixel offset of the grid (so snapping aligns with the panned grid). */
+  gridOffset: Point
 }
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w'
@@ -50,14 +52,20 @@ type DragMode =
 
 const SELECTION_COLOR = '#2563eb'
 
-export function SvgOverlay({ map, projector, version, width, height }: Props) {
+export function SvgOverlay({
+  map,
+  projector,
+  version,
+  width,
+  height,
+  gridOffset,
+}: Props) {
   const shapes = useEditor((s) => s.shapes)
   const order = useEditor((s) => s.order)
   const selection = useEditor((s) => s.selection)
   const tool = useEditor((s) => s.tool)
   const editingId = useEditor((s) => s.editingId)
   const activeVertex = useEditor((s) => s.activeVertex)
-  const gridVisible = useEditor((s) => s.gridVisible)
   const snapEnabled = useEditor((s) => s.snapEnabled)
   const gridSize = useEditor((s) => s.gridSize)
 
@@ -90,21 +98,22 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
 
   /** Snap a pixel point to the nearest grid intersection when snapping is on. */
   const snap = useCallback(
-    (p: Point): Point => (snapEnabled ? snapPixelToGrid(p, gridSize) : p),
-    [snapEnabled, gridSize],
+    (p: Point): Point =>
+      snapEnabled ? snapPixelToGrid(p, gridSize, gridOffset) : p,
+    [snapEnabled, gridSize, gridOffset],
   )
 
-  // --- Ctrl/Cmd + wheel = zoom (zoom toward the cursor) -----------------------
+  // --- wheel = zoom (zoom toward the cursor) ---------------------------------
   // The overlay swallows wheel events while interactive, so the map underneath
-  // never sees them. We forward Ctrl/Cmd+wheel to the map ourselves, keeping the
-  // point under the cursor fixed. A native (non-passive) listener is required so
-  // we can preventDefault the browser's pinch-zoom.
+  // never sees them. We forward the wheel to the map ourselves, keeping the
+  // point under the cursor fixed — so zooming works in every tool (including
+  // Tanlash), not just when panning with the hand. A native (non-passive)
+  // listener is required so we can preventDefault the browser's pinch-zoom.
   useEffect(() => {
     const svg = svgRef.current
     if (!svg) return
 
     const onWheel = (e: WheelEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return // only Ctrl/Cmd + wheel zooms
       if (!map || !projector) return
       e.preventDefault()
       e.stopPropagation()
@@ -116,10 +125,18 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
       const center = map.getCenter()
       if (cursorLatLng == null || oldZoom == null || center == null) return
 
-      // Satellite (raster) maps snap to integer zoom, so step ±1 per notch by
-      // the wheel direction — matches Google Maps' own wheel behaviour.
+      // Fractional zoom proportional to the wheel delta, so a small scroll =
+      // a small zoom. A full ±1 per notch felt far too strong (each step
+      // doubles/halves the scale), especially on trackpads that fire many
+      // events per gesture. SENSITIVITY caps the per-event change to a gentle
+      // fraction of a zoom level.
       if (e.deltaY === 0) return
-      const dz = e.deltaY < 0 ? 1 : -1
+      const SENSITIVITY = 0.002
+      const MAX_STEP = 0.25 // never jump more than a quarter level per event
+      const dz = Math.max(
+        -MAX_STEP,
+        Math.min(MAX_STEP, -e.deltaY * SENSITIVITY),
+      )
       const newZoom = Math.max(1, Math.min(22, oldZoom + dz))
       const factor = Math.pow(2, newZoom - oldZoom)
       if (factor === 1) return
@@ -269,14 +286,16 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
         y += h
         h = -h
       }
-      // Snap the edges the active handle moves onto the grid.
+      // Snap the edges the active handle moves onto the grid (offset-aware).
       if (snapEnabled) {
+        const snap1D = (v: number, off: number) =>
+          Math.round((v - off) / gridSize) * gridSize + off
         const right = x + w
         const bottom = y + h
-        if (drag.handle.includes('w')) x = Math.round(x / gridSize) * gridSize
-        if (drag.handle.includes('e')) w = Math.round(right / gridSize) * gridSize - x
-        if (drag.handle.includes('n')) y = Math.round(y / gridSize) * gridSize
-        if (drag.handle.includes('s')) h = Math.round(bottom / gridSize) * gridSize - y
+        if (drag.handle.includes('w')) x = snap1D(x, gridOffset.x)
+        if (drag.handle.includes('e')) w = snap1D(right, gridOffset.x) - x
+        if (drag.handle.includes('n')) y = snap1D(y, gridOffset.y)
+        if (drag.handle.includes('s')) h = snap1D(bottom, gridOffset.y) - y
         if (drag.handle.includes('w')) w = right - x
         if (drag.handle.includes('n')) h = bottom - y
       }
@@ -344,10 +363,6 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      {gridVisible && (
-        <GridLayer width={width} height={height} gridSize={gridSize} />
-      )}
-
       {projector &&
         order.map((id) => {
           const shape = shapes[id]
@@ -410,58 +425,6 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
 }
 
 // ---------------------------------------------------------------------------
-
-/**
- * A pixel-aligned grid (screen-fixed, does NOT scale with the map), drawn as an
- * SVG <pattern>: faint cell lines plus a dot at every intersection so the snap
- * targets are visible. Every 5th line is emphasised, Figma-style.
- */
-function GridLayer({
-  width,
-  height,
-  gridSize,
-}: {
-  width: number
-  height: number
-  gridSize: number
-}) {
-  const major = gridSize * 5
-  return (
-    <g pointerEvents="none">
-      <defs>
-        <pattern
-          id="grid-minor"
-          width={gridSize}
-          height={gridSize}
-          patternUnits="userSpaceOnUse"
-        >
-          <path
-            d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-          />
-          <circle cx={0} cy={0} r={1} fill="rgba(255,255,255,0.22)" />
-        </pattern>
-        <pattern
-          id="grid-major"
-          width={major}
-          height={major}
-          patternUnits="userSpaceOnUse"
-        >
-          <rect width={major} height={major} fill="url(#grid-minor)" />
-          <path
-            d={`M ${major} 0 L 0 0 0 ${major}`}
-            fill="none"
-            stroke="rgba(255,255,255,0.16)"
-            strokeWidth={1}
-          />
-        </pattern>
-      </defs>
-      <rect x={0} y={0} width={width} height={height} fill="url(#grid-major)" />
-    </g>
-  )
-}
 
 function ringToPixels(points: LatLng[], proj: Projector): Point[] {
   const out: Point[] = []
