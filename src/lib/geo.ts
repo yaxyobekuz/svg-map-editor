@@ -198,3 +198,11 @@ export function pointInRing(p: LatLng, ring: LatLng[]): boolean {
 export function midpoint(a: LatLng, b: LatLng): LatLng {
   return { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 }
 }
+
+/** Round a pixel point to the nearest grid intersection (pixel-space grid). */
+export function snapPixelToGrid(p: Point, gridSize: number): Point {
+  return {
+    x: Math.round(p.x / gridSize) * gridSize,
+    y: Math.round(p.y / gridSize) * gridSize,
+  }
+}

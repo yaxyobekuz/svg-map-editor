@@ -8,6 +8,7 @@ import {
   rectRingFromMeters,
   ringPathMeters,
   scaleRingToBounds,
+  snapPixelToGrid,
 } from './geo'
 
 describe('offsetMeters', () => {
@@ -83,6 +84,16 @@ describe('midpoint', () => {
       lat: 1,
       lng: 2,
     })
+  })
+})
+
+describe('snapPixelToGrid', () => {
+  it('rounds a point to the nearest grid intersection', () => {
+    expect(snapPixelToGrid({ x: 23, y: 38 }, 20)).toEqual({ x: 20, y: 40 })
+    expect(snapPixelToGrid({ x: 31, y: 9 }, 20)).toEqual({ x: 40, y: 0 })
+  })
+  it('leaves already-aligned points unchanged', () => {
+    expect(snapPixelToGrid({ x: 60, y: 80 }, 20)).toEqual({ x: 60, y: 80 })
   })
 })
 
