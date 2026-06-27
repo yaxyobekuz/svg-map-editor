@@ -31,8 +31,6 @@ interface Props {
   version: number
   width: number
   height: number
-  /** Current pixel offset of the grid (so snapping aligns with the panned grid). */
-  gridOffset: Point
 }
 
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w'
@@ -52,14 +50,7 @@ type DragMode =
 
 const SELECTION_COLOR = '#2563eb'
 
-export function SvgOverlay({
-  map,
-  projector,
-  version,
-  width,
-  height,
-  gridOffset,
-}: Props) {
+export function SvgOverlay({ map, projector, version, width, height }: Props) {
   const shapes = useEditor((s) => s.shapes)
   const order = useEditor((s) => s.order)
   const selection = useEditor((s) => s.selection)
@@ -98,9 +89,8 @@ export function SvgOverlay({
 
   /** Snap a pixel point to the nearest grid intersection when snapping is on. */
   const snap = useCallback(
-    (p: Point): Point =>
-      snapEnabled ? snapPixelToGrid(p, gridSize, gridOffset) : p,
-    [snapEnabled, gridSize, gridOffset],
+    (p: Point): Point => (snapEnabled ? snapPixelToGrid(p, gridSize) : p),
+    [snapEnabled, gridSize],
   )
 
   // --- wheel = zoom (zoom toward the cursor) ---------------------------------
@@ -286,16 +276,15 @@ export function SvgOverlay({
         y += h
         h = -h
       }
-      // Snap the edges the active handle moves onto the grid (offset-aware).
+      // Snap the edges the active handle moves onto the grid.
       if (snapEnabled) {
-        const snap1D = (v: number, off: number) =>
-          Math.round((v - off) / gridSize) * gridSize + off
+        const snap1D = (v: number) => Math.round(v / gridSize) * gridSize
         const right = x + w
         const bottom = y + h
-        if (drag.handle.includes('w')) x = snap1D(x, gridOffset.x)
-        if (drag.handle.includes('e')) w = snap1D(right, gridOffset.x) - x
-        if (drag.handle.includes('n')) y = snap1D(y, gridOffset.y)
-        if (drag.handle.includes('s')) h = snap1D(bottom, gridOffset.y) - y
+        if (drag.handle.includes('w')) x = snap1D(x)
+        if (drag.handle.includes('e')) w = snap1D(right) - x
+        if (drag.handle.includes('n')) y = snap1D(y)
+        if (drag.handle.includes('s')) h = snap1D(bottom) - y
         if (drag.handle.includes('w')) w = right - x
         if (drag.handle.includes('n')) h = bottom - y
       }

@@ -95,17 +95,6 @@ describe('snapPixelToGrid', () => {
   it('leaves already-aligned points unchanged', () => {
     expect(snapPixelToGrid({ x: 60, y: 80 }, 20)).toEqual({ x: 60, y: 80 })
   })
-  it('respects a grid offset (so it aligns with a panned grid)', () => {
-    // grid lines now sit at ...,-13,7,27,47,... (offset 7) on x
-    expect(snapPixelToGrid({ x: 24, y: 24 }, 20, { x: 7, y: 7 })).toEqual({
-      x: 27,
-      y: 27,
-    })
-    expect(snapPixelToGrid({ x: 7, y: 47 }, 20, { x: 7, y: 7 })).toEqual({
-      x: 7,
-      y: 47,
-    })
-  })
 })
 
 describe('ringPathMeters', () => {

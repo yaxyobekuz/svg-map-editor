@@ -200,17 +200,12 @@ export function midpoint(a: LatLng, b: LatLng): LatLng {
 }
 
 /**
- * Round a pixel point to the nearest grid intersection. `offset` is the grid's
- * current pixel offset (so snapping aligns with a grid that pans with the map);
- * pass {x:0,y:0} for a grid pinned to the origin.
+ * Round a pixel point to the nearest grid intersection. The grid is pinned to
+ * the screen origin (0,0), so snapping is stable regardless of map pan/zoom.
  */
-export function snapPixelToGrid(
-  p: Point,
-  gridSize: number,
-  offset: Point = { x: 0, y: 0 },
-): Point {
+export function snapPixelToGrid(p: Point, gridSize: number): Point {
   return {
-    x: Math.round((p.x - offset.x) / gridSize) * gridSize + offset.x,
-    y: Math.round((p.y - offset.y) / gridSize) * gridSize + offset.y,
+    x: Math.round(p.x / gridSize) * gridSize,
+    y: Math.round(p.y / gridSize) * gridSize,
   }
 }
