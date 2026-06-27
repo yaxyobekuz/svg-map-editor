@@ -12,7 +12,7 @@
  * events so the map underneath can be panned.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   boundsFromPoints,
   midpoint,
@@ -24,6 +24,7 @@ import { useEditor } from '../store'
 import type { LatLng, Point, Shape } from '../types'
 
 interface Props {
+  map: google.maps.Map | null
   projector: Projector | null
   /** bumped on every map move — forces re-projection */
   version: number
@@ -48,7 +49,7 @@ type DragMode =
 
 const SELECTION_COLOR = '#2563eb'
 
-export function SvgOverlay({ projector, version, width, height }: Props) {
+export function SvgOverlay({ map, projector, version, width, height }: Props) {
   const shapes = useEditor((s) => s.shapes)
   const order = useEditor((s) => s.order)
   const selection = useEditor((s) => s.selection)
@@ -82,6 +83,49 @@ export function SvgOverlay({ projector, version, width, height }: Props) {
     const rect = svgRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }, [])
+
+  // --- Ctrl/Cmd + wheel = zoom (zoom toward the cursor) -----------------------
+  // The overlay swallows wheel events while interactive, so the map underneath
+  // never sees them. We forward Ctrl/Cmd+wheel to the map ourselves, keeping the
+  // point under the cursor fixed. A native (non-passive) listener is required so
+  // we can preventDefault the browser's pinch-zoom.
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return // only Ctrl/Cmd + wheel zooms
+      if (!map || !projector) return
+      e.preventDefault()
+      e.stopPropagation()
+
+      const rect = svg.getBoundingClientRect()
+      const cursor = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      const cursorLatLng = projector.toLatLng(cursor)
+      const oldZoom = map.getZoom()
+      const center = map.getCenter()
+      if (cursorLatLng == null || oldZoom == null || center == null) return
+
+      // Satellite (raster) maps snap to integer zoom, so step ±1 per notch by
+      // the wheel direction — matches Google Maps' own wheel behaviour.
+      if (e.deltaY === 0) return
+      const dz = e.deltaY < 0 ? 1 : -1
+      const newZoom = Math.max(1, Math.min(22, oldZoom + dz))
+      const factor = Math.pow(2, newZoom - oldZoom)
+      if (factor === 1) return
+
+      // keep the cursor point fixed: newCenter = cursor + (center - cursor)/factor
+      const newCenter = {
+        lat: cursorLatLng.lat + (center.lat() - cursorLatLng.lat) / factor,
+        lng: cursorLatLng.lng + (center.lng() - cursorLatLng.lng) / factor,
+      }
+      map.setZoom(newZoom)
+      map.setCenter(newCenter)
+    }
+
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    return () => svg.removeEventListener('wheel', onWheel)
+  }, [map, projector])
 
   // --- background ------------------------------------------------------------
 
