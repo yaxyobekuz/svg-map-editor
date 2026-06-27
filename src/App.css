@@ -1,0 +1,608 @@
+/* ===========================================================================
+   Figma-style editor layout
+   =========================================================================== */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-app);
+  color: var(--text);
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- Toolbar -------------------------------------------------------------- */
+
+.toolbar {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  z-index: 30;
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  padding-right: 8px;
+}
+
+.brand-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+}
+
+.toolbar-tools {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  transition: background 0.12s, color 0.12s;
+}
+
+.tool-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.tool-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tool-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tool-label {
+  font-size: 12px;
+}
+
+.toolbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shape-count {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.export-btn {
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+  transition: filter 0.12s;
+}
+
+.export-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.export-btn:disabled {
+  background: var(--bg-panel-2);
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+/* ---- Panels (shared) ------------------------------------------------------ */
+
+.panel {
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.panel-left {
+  width: 240px;
+  border-right: 1px solid var(--border);
+}
+
+.panel-right {
+  width: 280px;
+  border-left: 1px solid var(--border);
+}
+
+.panel-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.panel-subhint {
+  padding: 6px 12px 2px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.panel-divider {
+  height: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.empty-hint {
+  padding: 16px 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+/* ---- Stage (map) ---------------------------------------------------------- */
+
+.stage {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  background: #0a0a0a;
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.map-bg {
+  position: absolute;
+  inset: 0;
+}
+
+.svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.map-status {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-panel);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  z-index: 20;
+}
+
+.map-overlay-notice {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.85);
+  z-index: 20;
+}
+
+.notice-card {
+  max-width: 420px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-2);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: left;
+}
+
+.notice-card.error {
+  border-color: var(--danger);
+}
+
+.notice-card h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.notice-card p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.notice-card ol {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.notice-card code {
+  background: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.notice-hint {
+  font-size: 12px !important;
+  color: var(--text-faint) !important;
+}
+
+/* ---- Layers panel --------------------------------------------------------- */
+
+.layer-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.layer-row:hover {
+  background: var(--bg-hover);
+}
+
+.layer-row.selected {
+  background: var(--accent-dim);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.layer-icon {
+  width: 14px;
+  text-align: center;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-toggle {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  opacity: 0;
+  padding: 2px;
+  line-height: 1;
+}
+
+.layer-row:hover .layer-toggle {
+  opacity: 0.7;
+}
+
+.layer-toggle:hover {
+  opacity: 1 !important;
+}
+
+/* ---- Templates panel ------------------------------------------------------ */
+
+.templates-panel {
+  flex-shrink: 0;
+  max-height: 45%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  overflow-y: auto;
+}
+
+.template-card {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: grab;
+  transition: border-color 0.12s, transform 0.05s;
+}
+
+.template-card:hover {
+  border-color: var(--accent);
+}
+
+.template-card:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+.template-thumb {
+  height: 56px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  padding: 6px;
+  margin-bottom: 6px;
+}
+
+.template-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.template-size {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+/* ---- Properties panel ----------------------------------------------------- */
+
+.properties-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.prop-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+.prop-hint {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.4;
+}
+
+.prop-row {
+  display: flex;
+  gap: 8px;
+}
+
+.prop-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.prop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prop-field > span {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.prop-field input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0 8px;
+  height: 28px;
+  font-size: 12px;
+  width: 100%;
+}
+
+.prop-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.prop-field input[type='color'] {
+  height: 28px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.prop-field input[type='range'] {
+  padding: 0;
+  height: auto;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.prop-field.readonly code {
+  display: block;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Attributes table ----------------------------------------------------- */
+
+.attr-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attr-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.attr-key,
+.attr-value {
+  height: 26px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-2);
+  border-radius: 5px;
+  color: var(--text);
+  padding: 0 7px;
+  font-size: 11px;
+  min-width: 0;
+}
+
+.attr-key {
+  flex: 0 0 40%;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.attr-value {
+  flex: 1;
+}
+
+.attr-key:focus,
+.attr-value:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.attr-key:disabled,
+.attr-value:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.attr-remove {
+  flex-shrink: 0;
+  width: 24px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.attr-remove:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+
+.attr-remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.attr-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.attr-add input {
+  flex: 1;
+  height: 28px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.attr-add input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.attr-add button {
+  height: 28px;
+  padding: 0 12px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.attr-add button:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+/* ---- Scrollbars ----------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 6px;
+  border: 2px solid var(--bg-panel);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}

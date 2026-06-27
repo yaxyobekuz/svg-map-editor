@@ -1,0 +1,58 @@
+:root {
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* Figma-like dark theme */
+  --bg-app: #1e1e1e;
+  --bg-panel: #2c2c2c;
+  --bg-panel-2: #383838;
+  --bg-input: #1e1e1e;
+  --bg-hover: #3a3a3a;
+  --border: #3a3a3a;
+  --border-2: #4a4a4a;
+  --text: #e6e6e6;
+  --text-dim: #a0a0a0;
+  --text-faint: #6e6e6e;
+  --accent: #0d99ff;
+  --accent-dim: rgba(13, 153, 255, 0.15);
+  --danger: #f24822;
+
+  color-scheme: dark;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-app);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+code {
+  font-family: var(--mono);
+}
