@@ -13,7 +13,7 @@ import { SvgOverlay } from './SvgOverlay'
 export function MapCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapDivRef = useRef<HTMLDivElement>(null)
-  const { projector, version, status, error } = useGoogleMap(mapDivRef)
+  const { map, projector, version, status, error } = useGoogleMap(mapDivRef)
   const dropTemplate = useEditor((s) => s.dropTemplate)
 
   const [size, setSize] = useState({ width: 0, height: 0 })
@@ -59,6 +59,7 @@ export function MapCanvas() {
 
       {/* SVG editor overlay */}
       <SvgOverlay
+        map={map}
         projector={projector}
         version={version}
         width={size.width}
