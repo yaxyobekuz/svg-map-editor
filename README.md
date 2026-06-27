@@ -59,6 +59,7 @@ chegaralarni belgilab, natijani **SVG** ko'rinishida eksport qilasiz.
 | `F`            | Frame chizish           |
 | `R`            | Rectangle chizish       |
 | 2 marta bosish | Nuqta tahrirlash rejimi |
+| `Ctrl/Cmd` + wheel | Xaritani zoom qilish (kursor tomon) |
 | `Delete`       | Obyekt (yoki tanlangan nuqta) o'chirish |
 | `Esc`          | Nuqta rejimidan chiqish / tanlovni bekor qilish |
 
