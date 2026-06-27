@@ -17,6 +17,7 @@ import {
   boundsFromPoints,
   midpoint,
   projectBounds,
+  snapPixelToGrid,
   unprojectRect,
   type Projector,
 } from '../lib/geo'
@@ -56,6 +57,9 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
   const tool = useEditor((s) => s.tool)
   const editingId = useEditor((s) => s.editingId)
   const activeVertex = useEditor((s) => s.activeVertex)
+  const gridVisible = useEditor((s) => s.gridVisible)
+  const snapEnabled = useEditor((s) => s.snapEnabled)
+  const gridSize = useEditor((s) => s.gridSize)
 
   const toggleSelect = useEditor((s) => s.toggleSelect)
   const clearSelection = useEditor((s) => s.clearSelection)
@@ -83,6 +87,12 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
     const rect = svgRef.current!.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }, [])
+
+  /** Snap a pixel point to the nearest grid intersection when snapping is on. */
+  const snap = useCallback(
+    (p: Point): Point => (snapEnabled ? snapPixelToGrid(p, gridSize) : p),
+    [snapEnabled, gridSize],
+  )
 
   // --- Ctrl/Cmd + wheel = zoom (zoom toward the cursor) -----------------------
   // The overlay swallows wheel events while interactive, so the map underneath
@@ -132,7 +142,7 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
   const onBackgroundPointerDown = (e: React.PointerEvent) => {
     if (!interactive || !projector) return
     if (e.button !== 0) return
-    const p = localPoint(e)
+    const p = snap(localPoint(e))
     if (tool === 'rect' || tool === 'frame') {
       svgRef.current?.setPointerCapture(e.pointerId)
       setDrag({ kind: 'draw', start: p, current: p })
@@ -217,7 +227,7 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
     const p = localPoint(e)
 
     if (drag.kind === 'draw') {
-      setDrag({ ...drag, current: p })
+      setDrag({ ...drag, current: snap(p) })
       return
     }
 
@@ -230,7 +240,7 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
     }
 
     if (drag.kind === 'moveVertex') {
-      const ll = projector.toLatLng(p)
+      const ll = projector.toLatLng(snap(p))
       if (ll) moveVertex(drag.id, drag.index, ll)
       return
     }
@@ -258,6 +268,17 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
       if (h < 0) {
         y += h
         h = -h
+      }
+      // Snap the edges the active handle moves onto the grid.
+      if (snapEnabled) {
+        const right = x + w
+        const bottom = y + h
+        if (drag.handle.includes('w')) x = Math.round(x / gridSize) * gridSize
+        if (drag.handle.includes('e')) w = Math.round(right / gridSize) * gridSize - x
+        if (drag.handle.includes('n')) y = Math.round(y / gridSize) * gridSize
+        if (drag.handle.includes('s')) h = Math.round(bottom / gridSize) * gridSize - y
+        if (drag.handle.includes('w')) w = right - x
+        if (drag.handle.includes('n')) h = bottom - y
       }
       const newBounds = unprojectRect({ x, y, width: w, height: h }, projector)
       if (newBounds) resizeToBounds(drag.id, newBounds)
@@ -323,6 +344,10 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
+      {gridVisible && (
+        <GridLayer width={width} height={height} gridSize={gridSize} />
+      )}
+
       {projector &&
         order.map((id) => {
           const shape = shapes[id]
@@ -385,6 +410,58 @@ export function SvgOverlay({ map, projector, version, width, height }: Props) {
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * A pixel-aligned grid (screen-fixed, does NOT scale with the map), drawn as an
+ * SVG <pattern>: faint cell lines plus a dot at every intersection so the snap
+ * targets are visible. Every 5th line is emphasised, Figma-style.
+ */
+function GridLayer({
+  width,
+  height,
+  gridSize,
+}: {
+  width: number
+  height: number
+  gridSize: number
+}) {
+  const major = gridSize * 5
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <pattern
+          id="grid-minor"
+          width={gridSize}
+          height={gridSize}
+          patternUnits="userSpaceOnUse"
+        >
+          <path
+            d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+          />
+          <circle cx={0} cy={0} r={1} fill="rgba(255,255,255,0.22)" />
+        </pattern>
+        <pattern
+          id="grid-major"
+          width={major}
+          height={major}
+          patternUnits="userSpaceOnUse"
+        >
+          <rect width={major} height={major} fill="url(#grid-minor)" />
+          <path
+            d={`M ${major} 0 L 0 0 0 ${major}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth={1}
+          />
+        </pattern>
+      </defs>
+      <rect x={0} y={0} width={width} height={height} fill="url(#grid-major)" />
+    </g>
+  )
+}
 
 function ringToPixels(points: LatLng[], proj: Projector): Point[] {
   const out: Point[] = []
