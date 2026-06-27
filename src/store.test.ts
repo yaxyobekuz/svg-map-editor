@@ -10,6 +10,9 @@ function reset() {
     tool: 'select',
     editingId: null,
     activeVertex: null,
+    gridVisible: true,
+    snapEnabled: true,
+    gridSize: 20,
   })
 }
 
@@ -108,6 +111,26 @@ describe('store: remove cascades to children', () => {
     expect(order.length).toBe(0)
     expect(shapes[ids[0]]).toBeUndefined()
     expect(shapes[ids[1]]).toBeUndefined()
+  })
+})
+
+describe('store: grid toggles', () => {
+  beforeEach(reset)
+
+  it('toggleGrid and toggleSnap flip independently', () => {
+    expect(useEditor.getState().gridVisible).toBe(true)
+    useEditor.getState().toggleGrid()
+    expect(useEditor.getState().gridVisible).toBe(false)
+    expect(useEditor.getState().snapEnabled).toBe(true) // unaffected
+    useEditor.getState().toggleSnap()
+    expect(useEditor.getState().snapEnabled).toBe(false)
+  })
+
+  it('setGridSize clamps to a sane minimum', () => {
+    useEditor.getState().setGridSize(1)
+    expect(useEditor.getState().gridSize).toBeGreaterThanOrEqual(4)
+    useEditor.getState().setGridSize(32)
+    expect(useEditor.getState().gridSize).toBe(32)
   })
 })
 

@@ -10,7 +10,7 @@ import { LayersPanel } from './components/LayersPanel'
 import { MapCanvas } from './components/MapCanvas'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { TemplatesPanel } from './components/TemplatesPanel'
-import { Toolbar } from './components/Toolbar'
+import { Toolbar, ToolBar } from './components/Toolbar'
 import { useEditor, type Tool } from './store'
 
 const SHORTCUTS: Record<string, Tool> = {
@@ -84,6 +84,7 @@ export default function App() {
         <LayersPanel />
         <main className="stage">
           <MapCanvas />
+          <ToolBar />
         </main>
         <aside className="panel panel-right">
           <TemplatesPanel />

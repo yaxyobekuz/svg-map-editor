@@ -45,10 +45,22 @@ interface EditorState {
   /** Index of the highlighted vertex within the editing shape, or null. */
   activeVertex: number | null
 
+  /** Whether the pixel grid overlay is shown. */
+  gridVisible: boolean
+  /** Whether vertices snap to grid intersections while dragging. */
+  snapEnabled: boolean
+  /** Grid spacing in screen pixels. */
+  gridSize: number
+
   // --- selection ---
   select: (ids: string[]) => void
   toggleSelect: (id: string, additive: boolean) => void
   clearSelection: () => void
+
+  // --- grid ---
+  toggleGrid: () => void
+  toggleSnap: () => void
+  setGridSize: (size: number) => void
 
   // --- vertex edit mode ---
   enterVertexEdit: (id: string) => void
@@ -130,6 +142,9 @@ export const useEditor = create<EditorState>((set, get) => ({
   tool: 'select',
   editingId: null,
   activeVertex: null,
+  gridVisible: true,
+  snapEnabled: true,
+  gridSize: 20,
 
   select: (ids) => set({ selection: ids, editingId: null, activeVertex: null }),
   toggleSelect: (id, additive) =>
@@ -151,6 +166,10 @@ export const useEditor = create<EditorState>((set, get) => ({
     set({ editingId: id, selection: [id], activeVertex: null }),
   exitVertexEdit: () => set({ editingId: null, activeVertex: null }),
   setActiveVertex: (index) => set({ activeVertex: index }),
+
+  toggleGrid: () => set((s) => ({ gridVisible: !s.gridVisible })),
+  toggleSnap: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
+  setGridSize: (size) => set({ gridSize: Math.max(4, Math.round(size)) }),
 
   setTool: (tool) =>
     set({ tool, editingId: null, activeVertex: null }),
